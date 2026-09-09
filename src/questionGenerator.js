@@ -5,7 +5,7 @@
 // the stable general-knowledge subject each article touches on.
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = process.env.QUICKIE_MODEL || "llama-3.3-70b-versatile";
+const MODEL = process.env.QUICKIE_MODEL || "llama-3.1-8b-instant";
 
 function buildPrompt(theme, articles) {
   const articleList = articles
