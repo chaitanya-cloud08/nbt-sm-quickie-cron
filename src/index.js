@@ -1,7 +1,7 @@
 const { themeForDate } = require("./themes");
 const { fetchArticles } = require("./feed");
 const { generateQuestions } = require("./questionGenerator");
-const { appendRows } = require("./sheets");
+const { appendRows, getExistingQuestions } = require("./sheets");
 
 const ARTICLES_NEEDED = 5;
 
@@ -27,7 +27,10 @@ async function main() {
   const articles = await fetchArticles(feedUrl, ARTICLES_NEEDED);
   console.log(`[quickie] got ${articles.length} articles`);
 
-  const qa = await generateQuestions(theme, articles);
+  const usedQuestions = await getExistingQuestions();
+  console.log(`[quickie] ${usedQuestions.length} previously-used questions loaded from the sheet`);
+
+  const qa = await generateQuestions(theme, articles, usedQuestions);
   console.log(`[quickie] generated ${qa.length} questions`);
 
   const day = dayName(now);

@@ -38,6 +38,25 @@ async function ensureHeader(sheets, spreadsheetId, sheetName) {
   }
 }
 
+// Every question ever written to the sheet, so the generator can be told
+// exactly what to avoid repeating.
+async function getExistingQuestions() {
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  if (!spreadsheetId) throw new Error("SPREADSHEET_ID is not set");
+  const sheetName = process.env.SHEET_NAME || "Sheet1";
+
+  const sheets = await getSheetsClient();
+  await ensureHeader(sheets, spreadsheetId, sheetName);
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!D2:D`,
+  });
+
+  const values = res.data.values || [];
+  return [...new Set(values.map((row) => (row[0] || "").trim()).filter(Boolean))];
+}
+
 async function appendRows(rows) {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   if (!spreadsheetId) throw new Error("SPREADSHEET_ID is not set");
@@ -55,4 +74,4 @@ async function appendRows(rows) {
   });
 }
 
-module.exports = { appendRows, HEADER };
+module.exports = { appendRows, getExistingQuestions, HEADER };
