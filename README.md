@@ -21,11 +21,13 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
    article into one **evergreen general-knowledge question** in Hindi (Devanagari)
    about the article's broad subject — deliberately *not* about the specific ongoing
    story (so the card never goes stale) and never a repeat of a previously-used
-   question. If the model still returns a duplicate, the script retries automatically
-   (up to 4 attempts) before failing loudly rather than posting a repeat.
-4. Appends 5 rows (`Day, Date, Theme, Question, Answer, Article Link`) to a Google Sheet, so the
-   social media SPOC can pick them up and drop them into the quiz template (slide 5
-   always links back to Quickie).
+   question — plus 3 wrong-but-plausible options alongside the correct answer, for
+   a multiple-choice card. If the model still returns a duplicate question, or is
+   missing an option, the script retries automatically (up to 4 attempts) before
+   failing loudly rather than posting bad data.
+4. Appends 5 rows (`Day, Date, Theme, Question, Correct Answer, Option 2, Option 3,
+   Option 4`) to a Google Sheet, so the social media SPOC can pick them up and drop
+   them into the quiz template (slide 5 always links back to Quickie).
 
 ## Setup
 
@@ -50,10 +52,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 
 The workflow at [`.github/workflows/quickie-cron.yml`](.github/workflows/quickie-cron.yml)
 runs on a `30 3 * * *` UTC cron (= 09:00 IST daily) and can also be triggered manually
-from the Actions tab (`workflow_dispatch`). The manual trigger has a "Log raw feed field
-names..." checkbox — turn it on if the Article Link column ever comes up empty, then
-check the run's log for a `[quickie] no URL field found for "..."` line listing the
-feed's actual field names so the URL key list in `src/feed.js` can be updated.
+from the Actions tab (`workflow_dispatch`).
 
 ## Running locally
 
@@ -67,8 +66,9 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 
 - `src/themes.js` — day-of-week → theme → feed msid mapping.
 - `src/feed.js` — fetches and normalizes articles out of the global feed's JSON.
-- `src/questionGenerator.js` — prompts Groq for 5 evergreen GK Q&As, avoiding any
-  question already used, and retries if the model repeats itself anyway.
+- `src/questionGenerator.js` — prompts Groq for 5 evergreen GK questions, each with a
+  correct answer and 3 wrong options, avoiding any question already used, and retries
+  if the model repeats itself or leaves an option out.
 - `src/sheets.js` — reads previously-used questions and appends new rows to the
   Google Sheet (writes the header once).
 - `src/index.js` — orchestrates the daily run.

@@ -35,13 +35,15 @@ async function main() {
 
   const day = dayName(now);
   const date = formatDate(now);
-  const rows = qa.map(({ question, answer }, i) => [
+  const rows = qa.map(({ question, answer, wrongOptions }) => [
     day,
     date,
     theme,
     question,
     answer,
-    articles[i]?.url || "",
+    wrongOptions[0] || "",
+    wrongOptions[1] || "",
+    wrongOptions[2] || "",
   ]);
 
   await appendRows(rows);

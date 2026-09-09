@@ -36,14 +36,16 @@ ${articleList}
 ${avoidBlock}
 For EACH article, write one general-knowledge quiz question inspired by its broad subject area — NOT about the specific ongoing news event, and NOT reliant on any fact that could change (scores, ongoing figures, "as of now" details, breaking developments). The question must be a stable, evergreen general-knowledge fact related to the article's subject (e.g. if the article is about a cricket match, ask a GK question about cricket history/rules, not about the match result).
 
+For EACH question also write 3 wrong options (distractors) for a multiple-choice card: plausible enough to genuinely make someone pause and think, of the same type/category as the correct answer (e.g. if the answer is a year, all 3 wrong options should also be years; if it's a person, all 3 should be people from the same field), but clearly and unambiguously incorrect once you know the real fact — never a second defensible right answer.
+
 Rules:
-- Write both the question and the answer in Hindi, using Devanagari script (NBT is a Hindi publication) — not English, not Hinglish transliteration.
+- Write the question, the correct answer, and all 3 wrong options in Hindi, using Devanagari script (NBT is a Hindi publication) — not English, not Hinglish transliteration.
 - Exactly 5 questions, one per article, in the same order as the articles.
 - Each question should be short, punchy, and quiz-card friendly.
-- Each answer should be short (a word or short phrase).
+- The correct answer and each wrong option should be short (a word or short phrase).
 - Do not reference "the article" or "today's news" in the question.
 - All 5 questions must be about different facts from each other, and none may match or closely paraphrase any question in the "already used" list above.
-- Respond with ONLY a JSON object of the form {"questions": [{"question": "...", "answer": "..."}, ...]} containing exactly 5 entries, question and answer text in Hindi (Devanagari). No markdown, no commentary, no extra keys.`;
+- Respond with ONLY a JSON object of the form {"questions": [{"question": "...", "answer": "...", "wrongOptions": ["...", "...", "..."]}, ...]} containing exactly 5 entries, each with exactly 3 wrongOptions, all text in Hindi (Devanagari). No markdown, no commentary, no extra keys.`;
 }
 
 function extractQuestions(text) {
@@ -92,10 +94,20 @@ async function callGroq(theme, articles, avoidQuestions) {
     throw new Error(`Expected exactly 5 questions, got: ${JSON.stringify(questions)}`);
   }
 
-  return questions.map((q) => ({
+  const normalized = questions.map((q) => ({
     question: String(q.question || "").trim(),
     answer: String(q.answer || "").trim(),
+    wrongOptions: Array.isArray(q.wrongOptions)
+      ? q.wrongOptions.map((o) => String(o || "").trim()).filter(Boolean)
+      : [],
   }));
+
+  const incomplete = normalized.find((q) => !q.question || !q.answer || q.wrongOptions.length !== 3);
+  if (incomplete) {
+    throw new Error(`Expected question + answer + 3 wrongOptions for every entry, got: ${JSON.stringify(incomplete)}`);
+  }
+
+  return normalized;
 }
 
 // Retries the whole batch (rather than patching individual questions) whenever
@@ -106,7 +118,14 @@ async function generateQuestions(theme, articles, usedQuestions = []) {
   const avoidQuestions = [...usedQuestions];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const questions = await callGroq(theme, articles, avoidQuestions);
+    let questions;
+    try {
+      questions = await callGroq(theme, articles, avoidQuestions);
+    } catch (err) {
+      if (attempt === MAX_ATTEMPTS) throw err;
+      console.log(`[quickie] attempt ${attempt}/${MAX_ATTEMPTS} failed (${err.message}), retrying`);
+      continue;
+    }
 
     const batchNormalized = new Set();
     const duplicates = [];

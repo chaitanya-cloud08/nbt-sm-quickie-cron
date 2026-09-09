@@ -4,12 +4,7 @@ on:
   schedule:
     # 09:00 IST == 03:30 UTC, every day.
     - cron: "30 3 * * *"
-  workflow_dispatch:
-    inputs:
-      debug_feed:
-        description: "Log raw feed field names when a URL can't be found (troubleshooting)"
-        type: boolean
-        default: false
+  workflow_dispatch: {}
 
 jobs:
   generate-quiz:
@@ -30,5 +25,4 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           SHEET_NAME: ${{ secrets.SHEET_NAME }}
-          QUICKIE_DEBUG_FEED: ${{ inputs.debug_feed && '1' || '' }}
         run: npm start
