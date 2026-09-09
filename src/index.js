@@ -1,7 +1,7 @@
 const { themeForDate } = require("./themes");
 const { fetchArticles } = require("./feed");
 const { generateQuestions } = require("./questionGenerator");
-const { appendRows, getExistingQuestions } = require("./sheets");
+const { prependRows, getExistingQuestions } = require("./sheets");
 
 const ARTICLES_NEEDED = 5;
 
@@ -46,8 +46,8 @@ async function main() {
     wrongOptions[2] || "",
   ]);
 
-  await appendRows(rows);
-  console.log(`[quickie] appended ${rows.length} rows to the sheet`);
+  await prependRows(rows);
+  console.log(`[quickie] added ${rows.length} rows to the top of the sheet`);
 }
 
 main().catch((err) => {

@@ -25,9 +25,10 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
    a multiple-choice card. If the model still returns a duplicate question, or is
    missing an option, the script retries automatically (up to 4 attempts) before
    failing loudly rather than posting bad data.
-4. Appends 5 rows (`Day, Date, Theme, Question, Correct Answer, Option 2, Option 3,
-   Option 4`) to a Google Sheet, so the social media SPOC can pick them up and drop
-   them into the quiz template (slide 5 always links back to Quickie).
+4. Inserts 5 rows (`Day, Date, Theme, Question, Correct Answer, Option 2, Option 3,
+   Option 4`) at the top of a Google Sheet, right under the header, so the most
+   recent day's quiz is always the first thing the social media SPOC sees, and
+   drops them into the quiz template (slide 5 always links back to Quickie).
 
 ## Setup
 
@@ -69,6 +70,6 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 - `src/questionGenerator.js` — prompts Groq for 5 evergreen GK questions, each with a
   correct answer and 3 wrong options, avoiding any question already used, and retries
   if the model repeats itself or leaves an option out.
-- `src/sheets.js` — reads previously-used questions and appends new rows to the
-  Google Sheet (writes the header once).
+- `src/sheets.js` — reads previously-used questions and inserts new rows right
+  under the header in the Google Sheet, so the newest entry is always on top.
 - `src/index.js` — orchestrates the daily run.

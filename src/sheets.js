@@ -57,21 +57,47 @@ async function getExistingQuestions() {
   return [...new Set(values.map((row) => (row[0] || "").trim()).filter(Boolean))];
 }
 
-async function appendRows(rows) {
+async function getSheetId(sheets, spreadsheetId, sheetName) {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets(properties(sheetId,title))",
+  });
+  const sheet = meta.data.sheets.find((s) => s.properties.title === sheetName);
+  if (!sheet) throw new Error(`Sheet tab "${sheetName}" not found`);
+  return sheet.properties.sheetId;
+}
+
+// Inserts new rows directly under the header (row 1), pushing everything else
+// down, so the most recent day's quiz always shows up on top.
+async function prependRows(rows) {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   if (!spreadsheetId) throw new Error("SPREADSHEET_ID is not set");
   const sheetName = process.env.SHEET_NAME || "Sheet1";
 
   const sheets = await getSheetsClient();
   await ensureHeader(sheets, spreadsheetId, sheetName);
+  const sheetId = await getSheetId(sheets, spreadsheetId, sheetName);
 
-  await sheets.spreadsheets.values.append({
+  await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
-    range: `${sheetName}!A1:H1`,
+    requestBody: {
+      requests: [
+        {
+          insertDimension: {
+            range: { sheetId, dimension: "ROWS", startIndex: 1, endIndex: 1 + rows.length },
+            inheritFromBefore: false,
+          },
+        },
+      ],
+    },
+  });
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A2:H${1 + rows.length}`,
     valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
     requestBody: { values: rows },
   });
 }
 
-module.exports = { appendRows, getExistingQuestions, HEADER };
+module.exports = { prependRows, getExistingQuestions, HEADER };
