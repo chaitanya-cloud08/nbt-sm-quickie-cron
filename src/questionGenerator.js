@@ -43,13 +43,19 @@ Rules:
 - Each answer should be short (a word or short phrase).
 - Do not reference "the article" or "today's news" in the question.
 - All 5 questions must be about different facts from each other, and none may match or closely paraphrase any question in the "already used" list above.
-- Return ONLY valid JSON, an array of 5 objects: [{"question": "...", "answer": "..."}, ...], with question and answer text in Hindi (Devanagari). No markdown, no commentary.`;
+- Respond with ONLY a JSON object of the form {"questions": [{"question": "...", "answer": "..."}, ...]} containing exactly 5 entries, question and answer text in Hindi (Devanagari). No markdown, no commentary, no extra keys.`;
 }
 
-function extractJsonArray(text) {
-  const match = text.match(/\[[\s\S]*\]/);
-  if (!match) throw new Error(`Could not find a JSON array in model response: ${text}`);
-  return JSON.parse(match[0]);
+function extractQuestions(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/) || text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error(`Could not find JSON in model response: ${text}`);
+    parsed = JSON.parse(match[0]);
+  }
+  return Array.isArray(parsed) ? parsed : parsed.questions;
 }
 
 async function callGroq(theme, articles, avoidQuestions) {
@@ -64,7 +70,9 @@ async function callGroq(theme, articles, avoidQuestions) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 4096,
+      reasoning_effort: "low",
+      response_format: { type: "json_object" },
       messages: [{ role: "user", content: buildPrompt(theme, articles, avoidQuestions) }],
     }),
   });
@@ -75,7 +83,10 @@ async function callGroq(theme, articles, avoidQuestions) {
 
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content || "";
-  const questions = extractJsonArray(text);
+  if (!text.trim()) {
+    throw new Error(`Groq returned an empty response. Full payload: ${JSON.stringify(data)}`);
+  }
+  const questions = extractQuestions(text);
 
   if (!Array.isArray(questions) || questions.length !== 5) {
     throw new Error(`Expected exactly 5 questions, got: ${JSON.stringify(questions)}`);
