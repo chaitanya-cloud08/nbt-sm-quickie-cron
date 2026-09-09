@@ -32,7 +32,14 @@ async function main() {
 
   const day = dayName(now);
   const date = formatDate(now);
-  const rows = qa.map(({ question, answer }) => [day, date, theme, question, answer]);
+  const rows = qa.map(({ question, answer }, i) => [
+    day,
+    date,
+    theme,
+    question,
+    answer,
+    articles[i]?.url || "",
+  ]);
 
   await appendRows(rows);
   console.log(`[quickie] appended ${rows.length} rows to the sheet`);

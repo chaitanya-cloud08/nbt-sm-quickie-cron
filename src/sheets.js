@@ -1,6 +1,6 @@
 const { google } = require("googleapis");
 
-const HEADER = ["Day", "Date", "Theme", "Question", "Answer"];
+const HEADER = ["Day", "Date", "Theme", "Question", "Answer", "Article Link"];
 
 function loadCredentials() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -24,14 +24,14 @@ async function getSheetsClient() {
 async function ensureHeader(sheets, spreadsheetId, sheetName) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A1:E1`,
+    range: `${sheetName}!A1:F1`,
   });
   const firstRow = res.data.values?.[0];
   const hasHeader = firstRow && HEADER.every((h, i) => firstRow[i] === h);
   if (!hasHeader) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${sheetName}!A1:E1`,
+      range: `${sheetName}!A1:F1`,
       valueInputOption: "RAW",
       requestBody: { values: [HEADER] },
     });
@@ -48,7 +48,7 @@ async function appendRows(rows) {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A1:E1`,
+    range: `${sheetName}!A1:F1`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values: rows },

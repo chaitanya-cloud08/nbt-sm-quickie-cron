@@ -20,7 +20,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 3. Asks Groq to turn each article into one **evergreen general-knowledge question**
    about the article's broad subject — deliberately *not* about the specific ongoing
    story, so the card never goes stale if the news facts change later.
-4. Appends 5 rows (`Day, Date, Theme, Question, Answer`) to a Google Sheet, so the
+4. Appends 5 rows (`Day, Date, Theme, Question, Answer, Article Link`) to a Google Sheet, so the
    social media SPOC can pick them up and drop them into the quiz template (slide 5
    always links back to Quickie).
 
