@@ -6,12 +6,9 @@ const { prependRows, getExistingQuestions } = require("./sheets");
 const ARTICLES_NEEDED = 5;
 
 function formatDate(date) {
-  return date.toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const day = date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric" });
+  const month = date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short" });
+  return `${day}-${month}`;
 }
 
 function dayName(date) {
