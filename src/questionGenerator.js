@@ -22,11 +22,12 @@ ${articleList}
 For EACH article, write one general-knowledge quiz question inspired by its broad subject area — NOT about the specific ongoing news event, and NOT reliant on any fact that could change (scores, ongoing figures, "as of now" details, breaking developments). The question must be a stable, evergreen general-knowledge fact related to the article's subject (e.g. if the article is about a cricket match, ask a GK question about cricket history/rules, not about the match result).
 
 Rules:
+- Write both the question and the answer in Hindi, using Devanagari script (NBT is a Hindi publication) — not English, not Hinglish transliteration.
 - Exactly 5 questions, one per article, in the same order as the articles.
-- Each question should be short, punchy, quiz-card friendly, suitable for a Hindi-English (Hinglish) urban Indian social media audience.
+- Each question should be short, punchy, and quiz-card friendly.
 - Each answer should be short (a word or short phrase).
 - Do not reference "the article" or "today's news" in the question.
-- Return ONLY valid JSON, an array of 5 objects: [{"question": "...", "answer": "..."}, ...]. No markdown, no commentary.`;
+- Return ONLY valid JSON, an array of 5 objects: [{"question": "...", "answer": "..."}, ...], with question and answer text in Hindi (Devanagari). No markdown, no commentary.`;
 }
 
 function extractJsonArray(text) {
