@@ -4,8 +4,8 @@
 // change or age out before the card ships on social; instead it asks about
 // the stable general-knowledge subject each article touches on.
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = process.env.QUICKIE_MODEL || "claude-sonnet-5";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const MODEL = process.env.QUICKIE_MODEL || "llama-3.3-70b-versatile";
 
 function buildPrompt(theme, articles) {
   const articleList = articles
@@ -36,15 +36,14 @@ function extractJsonArray(text) {
 }
 
 async function generateQuestions(theme, articles) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not set");
 
-  const res = await fetch(ANTHROPIC_API_URL, {
+  const res = await fetch(GROQ_API_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: MODEL,
@@ -54,11 +53,11 @@ async function generateQuestions(theme, articles) {
   });
 
   if (!res.ok) {
-    throw new Error(`Anthropic API request failed: ${res.status} ${res.statusText} — ${await res.text()}`);
+    throw new Error(`Groq API request failed: ${res.status} ${res.statusText} — ${await res.text()}`);
   }
 
   const data = await res.json();
-  const text = data.content?.map((block) => block.text || "").join("") || "";
+  const text = data.choices?.[0]?.message?.content || "";
   const questions = extractJsonArray(text);
 
   if (!Array.isArray(questions) || questions.length !== 5) {

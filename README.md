@@ -17,7 +17,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 
 2. Pulls 5 articles for that theme from the NBT global feed
    (`https://global-feed.indiatimes.com/wufs/feed/list/article?client=nbt&pc=nbt&dm=t&msid=<theme-id>`).
-3. Asks Claude to turn each article into one **evergreen general-knowledge question**
+3. Asks Groq to turn each article into one **evergreen general-knowledge question**
    about the article's broad subject — deliberately *not* about the specific ongoing
    story, so the card never goes stale if the news facts change later.
 4. Appends 5 rows (`Day, Date, Theme, Question, Answer`) to a Google Sheet, so the
@@ -38,7 +38,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 
 | Secret                        | Value                                                              |
 |--------------------------------|---------------------------------------------------------------------|
-| `ANTHROPIC_API_KEY`            | An Anthropic API key                                                |
+| `GROQ_API_KEY`                 | A Groq API key (console.groq.com)                                   |
 | `GOOGLE_SERVICE_ACCOUNT_JSON`  | The service account JSON (raw, or base64: `base64 -w0 key.json`)    |
 | `SPREADSHEET_ID`               | The target spreadsheet ID                                           |
 | `SHEET_NAME`                   | The tab name to append to (defaults to `Sheet1` if omitted)         |
@@ -61,6 +61,6 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 
 - `src/themes.js` — day-of-week → theme → feed msid mapping.
 - `src/feed.js` — fetches and normalizes articles out of the global feed's JSON.
-- `src/questionGenerator.js` — prompts Claude for 5 evergreen GK Q&As.
+- `src/questionGenerator.js` — prompts Groq for 5 evergreen GK Q&As.
 - `src/sheets.js` — appends rows to the Google Sheet (writes the header once).
 - `src/index.js` — orchestrates the daily run.
