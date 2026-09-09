@@ -1,0 +1,28 @@
+name: NBT Quickie Daily Quiz
+
+on:
+  schedule:
+    # 09:00 IST == 03:30 UTC, every day.
+    - cron: "30 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  generate-quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --production
+
+      - name: Generate quiz and append to sheet
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+        run: npm start
