@@ -1,4 +1,14 @@
-# NBT Quickie Cron — "Sabse Tez, Quickie Se"
+# NBT Quickie Cron
+
+This repo holds two independent daily automations:
+
+1. [**"Sabse Tez, Quickie Se" quiz cron**](#1-sabse-tez-quickie-se-quiz-cron) (`src/`) — a
+   5-question GK quiz card, 9:00 AM IST.
+2. [**Quickie of the Day**](#2-quickie-of-the-day-instagram-caption-generator)
+   (`quickie_daily_sheet.py`) — one story a day with an Instagram caption + hashtags,
+   8:00 AM IST.
+
+## 1. "Sabse Tez, Quickie Se" quiz cron
 
 Automated daily script for the Instagram/Facebook Story quiz card series. Every day at
 **9:00 AM IST** it:
@@ -73,3 +83,51 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 - `src/sheets.js` — reads previously-used questions and inserts new rows right
   under the header in the Google Sheet, so the newest entry is always on top.
 - `src/index.js` — orchestrates the daily run.
+
+## 2. Quickie of the Day (Instagram caption generator)
+
+`quickie_daily_sheet.py` runs once a day (8:00 AM IST) and:
+
+1. Checks the sections in `SECTION_PRIORITY` (top of the file) in order, and for each
+   one prefers the top `rlData.edittrendingItems` entry — matched by headline/URL to
+   its full record in `items` — falling back to `items[0]` if there's no trending match.
+   Skips anything already in `used_stories.json`, so no story repeats.
+2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
+   a Hindi Instagram caption plus 8-12 hashtags as strict JSON. Retries once on a bad
+   response; after two failures it logs the error and still writes the row with
+   `"GENERATION_FAILED"` in place of the caption/hashtags rather than crashing.
+3. Appends one row (`Day, Date, Article MSID, Article URL, Headline, Instagram Caption,
+   Hashtags, Selection Source, Status`) to a Google Sheet tab (created automatically on
+   first run if it doesn't exist).
+
+**Real section msids needed:** `SECTION_PRIORITY` in `quickie_daily_sheet.py` ships with
+placeholder msids — replace them with the real "Top News" / "Politics" / etc. section ids.
+
+### Setup
+
+Reuses the same Google service account and Groq key as the quiz cron above. Env vars:
+
+| Env var                      | Value                                                          |
+|-------------------------------|-----------------------------------------------------------------|
+| `GROQ_API_KEY`                | A Groq API key                                                  |
+| `GOOGLE_SHEETS_CREDS_PATH`    | Path to the service account JSON key file                       |
+| `GOOGLE_SHEET_ID`             | The target spreadsheet ID                                       |
+| `GOOGLE_SHEET_TAB_NAME`       | Optional; defaults to `Quickie Of The Day`                      |
+
+The workflow at
+[`.github/workflows/quickie-daily-sheet.yml`](.github/workflows/quickie-daily-sheet.yml)
+writes the `GOOGLE_SERVICE_ACCOUNT_JSON` secret out to a temp file for
+`GOOGLE_SHEETS_CREDS_PATH`, reuses the `SPREADSHEET_ID` secret for `GOOGLE_SHEET_ID`, and
+reads an optional `QUICKIE_SHEET_TAB_NAME` secret. It also commits `used_stories.json`
+back to the branch after each run — GitHub Actions runners are ephemeral, so without
+that the "never repeat a story" tracking would reset on every run.
+
+### Running locally
+
+```bash
+pip install -r requirements.txt
+export GROQ_API_KEY=...
+export GOOGLE_SHEETS_CREDS_PATH=./service-account.json
+export GOOGLE_SHEET_ID=...
+python quickie_daily_sheet.py
+```
