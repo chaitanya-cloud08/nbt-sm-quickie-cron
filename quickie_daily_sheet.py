@@ -46,11 +46,9 @@ SHEET_HEADER = [
     "Article MSID",
     "Article URL",
     "Quickie Image URL",
-    "Headline",
+    "Article Headline",
     "Instagram Caption",
     "Hashtags",
-    "Selection Source",
-    "Status",
 ]
 
 QUICKIE_IMAGE_URL_TEMPLATE = "https://quickie.navbharattimes.com/api/feed/share-card?msid={msid}"
@@ -275,6 +273,12 @@ def get_worksheet():
     return ws
 
 
+def prepend_row(ws, row):
+    """Inserts directly under the header (row 2), pushing existing rows down,
+    so the most recent entry is always on top."""
+    ws.insert_row(row, index=2, value_input_option="RAW")
+
+
 def main():
     used_ids = load_used_stories()
 
@@ -308,13 +312,11 @@ def main():
         headline,
         caption,
         " ".join(hashtags),
-        source,
-        status,
     ]
 
     try:
         ws = get_worksheet()
-        ws.append_row(row, value_input_option="RAW")
+        prepend_row(ws, row)
     except Exception as e:
         log.error("Failed to write to Google Sheet: %s", e)
         sys.exit(1)
