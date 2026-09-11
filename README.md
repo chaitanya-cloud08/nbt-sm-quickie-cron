@@ -100,8 +100,9 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    Hashtags, Selection Source, Status`) to a Google Sheet tab (created automatically on
    first run if it doesn't exist).
 
-**Real section msids needed:** `SECTION_PRIORITY` in `quickie_daily_sheet.py` ships with
-placeholder msids — replace them with the real "Top News" / "Politics" / etc. section ids.
+`SECTION_PRIORITY` in `quickie_daily_sheet.py` currently checks only the India News
+section (msid `1564454`) — add more `{"name", "msid"}` entries there for additional
+fallback sections.
 
 ### Setup
 

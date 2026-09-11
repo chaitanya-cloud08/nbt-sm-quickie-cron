@@ -26,10 +26,9 @@ from google.oauth2.service_account import Credentials
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("quickie")
 
-# Feed sections to check, in priority order. Replace these msids with the
-# real "Top News" / "Politics" / etc. section ids for your feed.
+# Feed sections to check, in priority order. Add more {"name", "msid"}
+# entries here if you want additional fallback sections.
 SECTION_PRIORITY = [
-    {"name": "Top News", "msid": "2354729"},
     {"name": "India", "msid": "1564454"},
 ]
 
