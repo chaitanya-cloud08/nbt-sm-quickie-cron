@@ -95,9 +95,11 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    `used_stories.json` is skipped, walking further down the list rather than giving up,
    so no story repeats and a section doesn't dead-end after its top story is used once.
 2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
-   a Hindi Instagram caption plus 8-12 hashtags as strict JSON. Retries once on a bad
-   response; after two failures it logs the error and still writes the row with
-   `"GENERATION_FAILED"` in place of the caption/hashtags rather than crashing.
+   a crisp, two-line Hindi Instagram caption (a short hook line, then the "comment
+   'Quickie' for the link in DM" CTA always on its own line) plus 8-12 hashtags as
+   strict JSON. Retries once on a bad response — including a missing line break between
+   the hook and the CTA; after two failures it logs the error and still writes the row
+   with `"GENERATION_FAILED"` in place of the caption/hashtags rather than crashing.
 3. Inserts one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Article
    Headline, Instagram Caption, Hashtags`) at the top of a Google Sheet tab, right under
    the header (created automatically on first run if it doesn't exist), so the most

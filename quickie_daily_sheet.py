@@ -61,14 +61,16 @@ in this exact shape:
 
 Rules for "caption":
 - Written in Hindi.
-- Hook-first and curiosity-driven — make someone stop scrolling.
-- Under 200 characters total (hook line + CTA line combined).
-- Ends with a call-to-action telling the reader to comment the word "Quickie" to get
-  the full story link sent to their DM — naming the story's topic in that line, e.g.
-  for a story about the BRICS summit: 'BRICS समिट के बारे में और जानने के लिए कमेंट
-  करें "Quickie" और पाएं अपने DM में लिंक'. Always keep the word "Quickie" in English
-  inside quotes exactly like that, and phrase the rest of that line to fit today's
-  topic.
+- Two lines only, separated by a literal "\n" inside the JSON string:
+  1. A crisp, hook-first, curiosity-driven line — make someone stop scrolling. Keep it
+     tight: short words, no filler, no throat-clearing. Under 80 characters.
+  2. A call-to-action telling the reader to comment the word "Quickie" to get the full
+     story link sent to their DM — naming the story's topic in that line, e.g. for a
+     story about the BRICS summit: 'BRICS समिट के बारे में और जानने के लिए कमेंट करें
+     "Quickie" और पाएं अपने DM में लिंक'. Always keep the word "Quickie" in English
+     inside quotes exactly like that, and phrase the rest of that line to fit today's
+     topic. This line must always be on its own line, never merged into line 1.
+- The two lines combined must stay under 200 characters.
 
 Rules for "hashtags":
 - An array of 8 to 12 hashtags, mixing:
@@ -226,6 +228,8 @@ def parse_groq_response(content):
     hashtags = parsed["hashtags"]
     if not isinstance(caption, str) or not caption.strip():
         raise ValueError("Missing or empty 'caption' in Groq response")
+    if "\n" not in caption.strip():
+        raise ValueError("'caption' is missing the required line break before the CTA line")
     if not isinstance(hashtags, list) or not hashtags:
         raise ValueError("Missing or empty 'hashtags' in Groq response")
     return caption.strip(), [str(h).strip() for h in hashtags if str(h).strip()]
