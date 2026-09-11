@@ -142,9 +142,12 @@ def save_used_stories(used_ids):
 
 
 def select_story(used_ids):
-    """Prefer the first trending item per section (in priority order), matched
-    to its full record in `items`; fall back to items[0] per section if no
-    trending match. Skips anything already in used_ids."""
+    """Prefer trending items per section (in priority order, top trending entry
+    first), matched to their full record in `items`; fall back to walking
+    through `items` itself (most recent first) if there's no trending match,
+    or once every trending candidate has already been used. Skips anything
+    already in used_ids so a section doesn't dead-end after its top story is
+    used once."""
     trending_candidates = []
     fallback_candidates = []
 
@@ -158,15 +161,17 @@ def select_story(used_ids):
         items = feed_data.get("items") or []
         trending = (feed_data.get("rlData") or {}).get("edittrendingItems") or []
 
-        if trending:
-            matched = match_trending_item(trending[0], items)
+        section_matches = 0
+        for trend_entry in trending:
+            matched = match_trending_item(trend_entry, items)
             if matched:
                 trending_candidates.append((matched, "trending", section["name"]))
-            else:
-                log.info("No item match for top trending entry in section %s", section["name"])
+                section_matches += 1
+        if trending and not section_matches:
+            log.info("No item match for any trending entry in section %s", section["name"])
 
-        if items:
-            fallback_candidates.append((items[0], "recency_fallback", section["name"]))
+        for item in items:
+            fallback_candidates.append((item, "recency_fallback", section["name"]))
 
     for item, source, section_name in trending_candidates + fallback_candidates:
         article_id = get_field(item, ["id", "msid"]) or str(item.get("id") or item.get("msid") or "")
