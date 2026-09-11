@@ -45,12 +45,15 @@ SHEET_HEADER = [
     "Date",
     "Article MSID",
     "Article URL",
+    "Quickie Image URL",
     "Headline",
     "Instagram Caption",
     "Hashtags",
     "Selection Source",
     "Status",
 ]
+
+QUICKIE_IMAGE_URL_TEMPLATE = "https://quickie.navbharattimes.com/api/feed/share-card?msid={msid}"
 
 GROQ_SYSTEM_PROMPT = """You write Instagram captions for NBT's "Quickie" news brief brand.
 
@@ -280,6 +283,7 @@ def main():
     synopsis = strip_html(get_field(item, ["syn", "synopsis", "summary"]) or "")
     seolocation = get_field(item, ["seolocation", "seo_location"]) or ""
     article_url = build_article_url(seolocation, article_id)
+    quickie_image_url = QUICKIE_IMAGE_URL_TEMPLATE.format(msid=article_id)
 
     log.info("Selected story %s from %s (%s): %s", article_id, section_name, source, headline)
 
@@ -295,6 +299,7 @@ def main():
         now.strftime("%d-%m-%Y"),
         article_id,
         article_url,
+        quickie_image_url,
         headline,
         caption,
         " ".join(hashtags),

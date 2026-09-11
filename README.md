@@ -96,9 +96,10 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    a Hindi Instagram caption plus 8-12 hashtags as strict JSON. Retries once on a bad
    response; after two failures it logs the error and still writes the row with
    `"GENERATION_FAILED"` in place of the caption/hashtags rather than crashing.
-3. Appends one row (`Day, Date, Article MSID, Article URL, Headline, Instagram Caption,
-   Hashtags, Selection Source, Status`) to a Google Sheet tab (created automatically on
-   first run if it doesn't exist).
+3. Appends one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Headline,
+   Instagram Caption, Hashtags, Selection Source, Status`) to a Google Sheet tab (created
+   automatically on first run if it doesn't exist). The Quickie Image URL is
+   `https://quickie.navbharattimes.com/api/feed/share-card?msid=<article-id>`.
 
 `SECTION_PRIORITY` in `quickie_daily_sheet.py` currently checks only the India News
 section (msid `1564454`) — add more `{"name", "msid"}` entries there for additional
