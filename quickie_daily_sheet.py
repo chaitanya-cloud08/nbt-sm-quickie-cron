@@ -61,9 +61,13 @@ in this exact shape:
 Rules for "caption":
 - Written in Hindi.
 - Hook-first and curiosity-driven — make someone stop scrolling.
-- Under 150 characters.
-- Ends with a line inviting people to read the full Quickie brief (no link needed,
-  Instagram captions don't support clickable links).
+- Under 200 characters total (hook line + CTA line combined).
+- Ends with a call-to-action telling the reader to comment the word "Quickie" to get
+  the full story link sent to their DM — naming the story's topic in that line, e.g.
+  for a story about the BRICS summit: 'BRICS समिट के बारे में और जानने के लिए कमेंट
+  करें "Quickie" और पाएं अपने DM में लिंक'. Always keep the word "Quickie" in English
+  inside quotes exactly like that, and phrase the rest of that line to fit today's
+  topic.
 
 Rules for "hashtags":
 - An array of 8 to 12 hashtags, mixing:
