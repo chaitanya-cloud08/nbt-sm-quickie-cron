@@ -2,8 +2,8 @@ name: Quickie of the Day
 
 on:
   schedule:
-    # 08:00 IST == 02:30 UTC, every day.
-    - cron: "30 2 * * *"
+    # 15:00 IST == 09:30 UTC, every day.
+    - cron: "30 9 * * *"
   workflow_dispatch: {}
 
 permissions:

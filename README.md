@@ -3,15 +3,15 @@
 This repo holds two independent daily automations:
 
 1. [**"Sabse Tez, Quickie Se" quiz cron**](#1-sabse-tez-quickie-se-quiz-cron) (`src/`) — a
-   3-question GK quiz card, 9:00 AM IST.
+   3-question GK quiz card, 11:00 AM IST.
 2. [**Quickie of the Day**](#2-quickie-of-the-day-instagram-caption-generator)
    (`quickie_daily_sheet.py`) — one story a day with an Instagram caption + hashtags,
-   8:00 AM IST.
+   3:00 PM IST.
 
 ## 1. "Sabse Tez, Quickie Se" quiz cron
 
 Automated daily script for the Instagram/Facebook Story quiz card series. Every day at
-**9:00 AM IST** it:
+**11:00 AM IST** it:
 
 1. Picks today's theme from the editorial calendar:
 
@@ -62,7 +62,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 ### 3. Schedule
 
 The workflow at [`.github/workflows/quickie-cron.yml`](.github/workflows/quickie-cron.yml)
-runs on a `30 3 * * *` UTC cron (= 09:00 IST daily) and can also be triggered manually
+runs on a `30 5 * * *` UTC cron (= 11:00 IST daily) and can also be triggered manually
 from the Actions tab (`workflow_dispatch`).
 
 ## Running locally
@@ -86,7 +86,7 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 
 ## 2. Quickie of the Day (Instagram caption generator)
 
-`quickie_daily_sheet.py` runs once a day (8:00 AM IST) and:
+`quickie_daily_sheet.py` runs once a day (3:00 PM IST) and:
 
 1. Checks the sections in `SECTION_PRIORITY` (top of the file) in order. For each one it
    prefers `rlData.edittrendingItems` entries — matched by headline/URL to their full
