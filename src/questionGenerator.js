@@ -37,6 +37,8 @@ ${articleList}
 ${avoidBlock}
 For EACH article, write one general-knowledge quiz question inspired by its broad subject area — NOT about the specific ongoing news event, and NOT reliant on any fact that could change (scores, ongoing figures, "as of now" details, breaking developments). The question must be a stable, evergreen general-knowledge fact related to the article's subject (e.g. if the article is about a cricket match, ask a GK question about cricket history/rules, not about the match result).
 
+IMPORTANT — stay inside today's theme (${theme}): every question's subject must clearly belong to that theme's domain, not just be loosely inspired by one word in the article. For example, on an Entertainment day, questions must be about movies/music/TV/celebrities/awards — never drift into religion, astrology, mythology, or festivals just because a public figure's name or a passing mention connects to them (that only belongs on an Astro/Dharm day). If an article's real subject doesn't clearly fit today's theme, pick a different evergreen fact from that same article that does fit the theme, rather than following a tangential religious/astrological angle.
+
 For EACH question also write 3 wrong options (distractors) for a multiple-choice card: plausible enough to genuinely make someone pause and think, of the same type/category as the correct answer (e.g. if the answer is a year, all 3 wrong options should also be years; if it's a person, all 3 should be people from the same field), but clearly and unambiguously incorrect once you know the real fact — never a second defensible right answer.
 
 Rules:
