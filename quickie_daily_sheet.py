@@ -1,6 +1,7 @@
 """
-Quickie of the Day — picks one NBT story, generates an Instagram caption +
-hashtags via Groq, and logs the result to a Google Sheet.
+Quickie of the Day — picks one NBT story, generates Instagram/WhatsApp
+Channel/Facebook-X captions + hashtags via Groq, and logs the result to a
+Google Sheet.
 
 Runs once, non-interactively (intended for cron / GitHub Actions, daily at
 8am). Env vars required:
@@ -46,20 +47,25 @@ SHEET_HEADER = [
     "Article MSID",
     "Article URL",
     "Quickie Image URL",
+    "Quickie URL",
     "Article Headline",
     "Instagram Caption",
+    "WP Channel Caption",
+    "FB/X Post Caption",
     "Hashtags",
 ]
 
 QUICKIE_IMAGE_URL_TEMPLATE = "https://quickie.navbharattimes.com/api/feed/share-card?msid={msid}"
+QUICKIE_URL_TEMPLATE = "https://quickie.navbharattimes.com/?itemId={msid}"
+MAX_HASHTAGS = 4
 
-GROQ_SYSTEM_PROMPT = """You write Instagram captions for NBT's "Quickie" news brief brand.
+GROQ_SYSTEM_PROMPT = """You write social captions for NBT's "Quickie" news brief brand.
 
 Given a news headline and synopsis, return STRICT JSON only, no markdown, no commentary,
 in this exact shape:
-{"caption": "...", "hashtags": ["...", "...", ...]}
+{"instagram_caption": "...", "wp_caption": "...", "fb_x_caption": "...", "hashtags": ["...", ...]}
 
-Rules for "caption":
+Rules for "instagram_caption":
 - Written in Hindi.
 - Two lines only, separated by a literal "\n" inside the JSON string:
   1. A crisp, hook-first, curiosity-driven line — make someone stop scrolling. Keep it
@@ -72,11 +78,23 @@ Rules for "caption":
      topic. This line must always be on its own line, never merged into line 1.
 - The two lines combined must stay under 200 characters.
 
+Rules for "wp_caption" (for a WhatsApp Channel post):
+- Written in Hindi, one crisp hook-first line, under 120 characters.
+- The story link will be added separately by hand right after this caption, so do NOT
+  tell the reader to comment anything and do NOT mention "Quickie" as a keyword to
+  comment — WhatsApp Channels have no automated comment-to-DM feature.
+
+Rules for "fb_x_caption" (for a Facebook/X post):
+- Written in Hindi, one crisp hook-first line, under 150 characters.
+- Same restriction as wp_caption: no "comment Quickie" instruction and no promise of a
+  DM — Facebook/X posting here has no automated comment-to-DM feature either.
+
 Rules for "hashtags":
-- An array of 8 to 12 hashtags, mixing:
-  - broad reach tags such as #NBT, #NavbharatTimes, #QuickieOfTheDay
-  - topical tags specific to this story
-  - 1-2 trending-style tags
+- An array of AT MOST 4 hashtags — only the most important ones, prioritized in order:
+  1. the single most relevant topical hashtag for this specific story
+  2-3. one or two more topical/relevant hashtags
+  4. one broad-reach brand hashtag (e.g. #NBT or #QuickieOfTheDay)
+- Do not pad to 4 with filler — fewer sharp hashtags beat more generic ones.
 - Hindi and/or English hashtags are both fine.
 """
 
@@ -224,18 +242,27 @@ def call_groq(headline, synopsis):
 
 def parse_groq_response(content):
     parsed = json.loads(strip_code_fences(content))
-    caption = parsed["caption"]
+    instagram_caption = parsed["instagram_caption"]
+    wp_caption = parsed["wp_caption"]
+    fb_x_caption = parsed["fb_x_caption"]
     hashtags = parsed["hashtags"]
-    if not isinstance(caption, str) or not caption.strip():
-        raise ValueError("Missing or empty 'caption' in Groq response")
-    if "\n" not in caption.strip():
-        raise ValueError("'caption' is missing the required line break before the CTA line")
+
+    if not isinstance(instagram_caption, str) or not instagram_caption.strip():
+        raise ValueError("Missing or empty 'instagram_caption' in Groq response")
+    if "\n" not in instagram_caption.strip():
+        raise ValueError("'instagram_caption' is missing the required line break before the CTA line")
+    if not isinstance(wp_caption, str) or not wp_caption.strip():
+        raise ValueError("Missing or empty 'wp_caption' in Groq response")
+    if not isinstance(fb_x_caption, str) or not fb_x_caption.strip():
+        raise ValueError("Missing or empty 'fb_x_caption' in Groq response")
     if not isinstance(hashtags, list) or not hashtags:
         raise ValueError("Missing or empty 'hashtags' in Groq response")
-    return caption.strip(), [str(h).strip() for h in hashtags if str(h).strip()]
+
+    hashtags = [str(h).strip() for h in hashtags if str(h).strip()][:MAX_HASHTAGS]
+    return instagram_caption.strip(), wp_caption.strip(), fb_x_caption.strip(), hashtags
 
 
-def generate_caption_and_hashtags(headline, synopsis):
+def generate_captions_and_hashtags(headline, synopsis):
     last_error = None
     for attempt in (1, 2):
         try:
@@ -245,7 +272,7 @@ def generate_caption_and_hashtags(headline, synopsis):
             last_error = e
             log.warning("Groq caption generation attempt %d/2 failed: %s", attempt, e)
     log.error("Groq caption generation failed twice, giving up: %s", last_error)
-    return "GENERATION_FAILED", ["GENERATION_FAILED"]
+    return "GENERATION_FAILED", "GENERATION_FAILED", "GENERATION_FAILED", ["GENERATION_FAILED"]
 
 
 def get_worksheet():
@@ -297,14 +324,15 @@ def main():
     seolocation = get_field(item, ["seolocation", "seo_location"]) or ""
     article_url = build_article_url(seolocation, article_id)
     quickie_image_url = QUICKIE_IMAGE_URL_TEMPLATE.format(msid=article_id)
+    quickie_url = QUICKIE_URL_TEMPLATE.format(msid=article_id)
 
     log.info("Selected story %s from %s (%s): %s", article_id, section_name, source, headline)
 
     used_ids.append(article_id)
     save_used_stories(used_ids)
 
-    caption, hashtags = generate_caption_and_hashtags(headline, synopsis)
-    status = "Needs Review" if caption == "GENERATION_FAILED" else "Ready"
+    instagram_caption, wp_caption, fb_x_caption, hashtags = generate_captions_and_hashtags(headline, synopsis)
+    status = "Needs Review" if instagram_caption == "GENERATION_FAILED" else "Ready"
 
     now = datetime.now(ZoneInfo("Asia/Kolkata"))
     row = [
@@ -313,8 +341,11 @@ def main():
         article_id,
         article_url,
         quickie_image_url,
+        quickie_url,
         headline,
-        caption,
+        instagram_caption,
+        wp_caption,
+        fb_x_caption,
         " ".join(hashtags),
     ]
 

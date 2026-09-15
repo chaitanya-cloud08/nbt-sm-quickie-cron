@@ -95,16 +95,26 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    `used_stories.json` is skipped, walking further down the list rather than giving up,
    so no story repeats and a section doesn't dead-end after its top story is used once.
 2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
-   a crisp, two-line Hindi Instagram caption (a short hook line, then the "comment
-   'Quickie' for the link in DM" CTA always on its own line) plus 8-12 hashtags as
-   strict JSON. Retries once on a bad response — including a missing line break between
-   the hook and the CTA; after two failures it logs the error and still writes the row
-   with `"GENERATION_FAILED"` in place of the caption/hashtags rather than crashing.
-3. Inserts one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Article
-   Headline, Instagram Caption, Hashtags`) at the top of a Google Sheet tab, right under
-   the header (created automatically on first run if it doesn't exist), so the most
-   recent day's story is always the first thing visible. The Quickie Image URL is
-   `https://quickie.navbharattimes.com/api/feed/share-card?msid=<article-id>`.
+   three separate captions plus hashtags as strict JSON:
+   - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the
+     "comment 'Quickie' for the link in DM" CTA always on its own line).
+   - **WP Channel Caption** — one crisp Hindi hook line for a WhatsApp Channel post,
+     with no "comment Quickie" instruction (the Quickie URL gets added by hand right
+     after it — WhatsApp Channels have no comment-to-DM automation).
+   - **FB/X Post Caption** — one crisp Hindi hook line for Facebook/X, also with no
+     "comment Quickie" instruction, for the same reason.
+   - **Hashtags** — at most 4, the most important/topical ones only, not padded out.
+
+   Retries once on a bad response — including a missing line break in the Instagram
+   caption; after two failures it logs the error and still writes the row with
+   `"GENERATION_FAILED"` in place of the captions/hashtags rather than crashing.
+3. Inserts one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Quickie
+   URL, Article Headline, Instagram Caption, WP Channel Caption, FB/X Post Caption,
+   Hashtags`) at the top of a Google Sheet tab, right under the header (created
+   automatically on first run if it doesn't exist), so the most recent day's story is
+   always the first thing visible.
+   - Quickie Image URL: `https://quickie.navbharattimes.com/api/feed/share-card?msid=<article-id>`
+   - Quickie URL: `https://quickie.navbharattimes.com/?itemId=<article-id>`
 
 `SECTION_PRIORITY` in `quickie_daily_sheet.py` currently checks only the India News
 section (msid `1564454`) — add more `{"name", "msid"}` entries there for additional
