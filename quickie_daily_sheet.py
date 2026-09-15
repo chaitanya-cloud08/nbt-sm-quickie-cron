@@ -59,6 +59,10 @@ QUICKIE_IMAGE_URL_TEMPLATE = "https://quickie.navbharattimes.com/api/feed/share-
 QUICKIE_URL_TEMPLATE = "https://quickie.navbharattimes.com/?itemId={msid}"
 MAX_HASHTAGS = 4
 
+# Appended in code (not by the model) to wp_caption/fb_x_caption so the URL is
+# always exactly right rather than something Groq might mistype.
+QUICKIE_CTA_LINE = "जानें सभी बड़ी खबरें बस 30 सेकंड में, अभी Quickie पर जाएं।"
+
 GROQ_SYSTEM_PROMPT = """You write social captions for NBT's "Quickie" news brief brand.
 
 Given a news headline and synopsis, return STRICT JSON only, no markdown, no commentary,
@@ -79,15 +83,17 @@ Rules for "instagram_caption":
 - The two lines combined must stay under 200 characters.
 
 Rules for "wp_caption" (for a WhatsApp Channel post):
-- Written in Hindi, one crisp hook-first line, under 120 characters.
-- The story link will be added separately by hand right after this caption, so do NOT
-  tell the reader to comment anything and do NOT mention "Quickie" as a keyword to
-  comment — WhatsApp Channels have no automated comment-to-DM feature.
+- Written in Hindi, one crisp hook-first line only, under 120 characters.
+- A closing line and the Quickie URL are appended automatically after this caption, so
+  do NOT write your own closing line, do NOT tell the reader to comment anything, and
+  do NOT mention "Quickie" as a keyword to comment — WhatsApp Channels have no
+  automated comment-to-DM feature. Just the hook line, nothing else.
 
 Rules for "fb_x_caption" (for a Facebook/X post):
-- Written in Hindi, one crisp hook-first line, under 150 characters.
-- Same restriction as wp_caption: no "comment Quickie" instruction and no promise of a
-  DM — Facebook/X posting here has no automated comment-to-DM feature either.
+- Written in Hindi, one crisp hook-first line only, under 150 characters.
+- Same restriction as wp_caption: a closing line and the Quickie URL are appended
+  automatically afterward, so write only the hook line — no "comment Quickie"
+  instruction, no promise of a DM, no closing line of your own.
 
 Rules for "hashtags":
 - An array of AT MOST 4 hashtags — only the most important ones, prioritized in order:
@@ -333,6 +339,11 @@ def main():
 
     instagram_caption, wp_caption, fb_x_caption, hashtags = generate_captions_and_hashtags(headline, synopsis)
     status = "Needs Review" if instagram_caption == "GENERATION_FAILED" else "Ready"
+
+    if wp_caption != "GENERATION_FAILED":
+        wp_caption = f"{wp_caption}\n\n{QUICKIE_CTA_LINE}\n{quickie_url}"
+    if fb_x_caption != "GENERATION_FAILED":
+        fb_x_caption = f"{fb_x_caption}\n\n{QUICKIE_CTA_LINE}\n{quickie_url}"
 
     now = datetime.now(ZoneInfo("Asia/Kolkata"))
     row = [

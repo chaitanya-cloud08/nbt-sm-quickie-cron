@@ -99,10 +99,13 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the
      "comment 'Quickie' for the link in DM" CTA always on its own line).
    - **WP Channel Caption** — one crisp Hindi hook line for a WhatsApp Channel post,
-     with no "comment Quickie" instruction (the Quickie URL gets added by hand right
-     after it — WhatsApp Channels have no comment-to-DM automation).
+     with no "comment Quickie" instruction (WhatsApp Channels have no comment-to-DM
+     automation). The script then appends a closing line — "जानें सभी बड़ी खबरें बस 30
+     सेकंड में, अभी Quickie पर जाएं।" — plus the Quickie URL, in code, so the link is
+     always exactly right.
    - **FB/X Post Caption** — one crisp Hindi hook line for Facebook/X, also with no
-     "comment Quickie" instruction, for the same reason.
+     "comment Quickie" instruction, and the same closing line + Quickie URL appended
+     the same way.
    - **Hashtags** — at most 4, the most important/topical ones only, not padded out.
 
    Retries once on a bad response — including a missing line break in the Instagram
