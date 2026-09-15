@@ -103,21 +103,27 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
      automation). The script then appends a closing line — "जानें सभी बड़ी खबरें बस 30
      सेकंड में, अभी Quickie पर जाएं।" — plus the Quickie URL, in code, so the link is
      always exactly right.
-   - **FB/X Post Caption** — one crisp Hindi hook line for Facebook/X, also with no
-     "comment Quickie" instruction, and the same closing line + Quickie URL appended
-     the same way.
+   - **FB Post Caption** / **X Post Caption** — the same crisp Hindi hook line (one
+     Groq call generates one hook, reused for both), also with no "comment Quickie"
+     instruction, each with the closing line + its own differently-UTM-tagged Quickie
+     URL appended.
    - **Hashtags** — at most 4, the most important/topical ones only, not padded out.
 
    Retries once on a bad response — including a missing line break in the Instagram
    caption; after two failures it logs the error and still writes the row with
    `"GENERATION_FAILED"` in place of the captions/hashtags rather than crashing.
 3. Inserts one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Quickie
-   URL, Article Headline, Instagram Caption, WP Channel Caption, FB/X Post Caption,
-   Hashtags`) at the top of a Google Sheet tab, right under the header (created
-   automatically on first run if it doesn't exist), so the most recent day's story is
-   always the first thing visible.
+   URL, Article Headline, Instagram Caption, WP Channel Caption, FB Post Caption, X
+   Post Caption, Hashtags`) at the top of a Google Sheet tab, right under the header
+   (created automatically on first run if it doesn't exist), so the most recent day's
+   story is always the first thing visible.
    - Quickie Image URL: `https://quickie.navbharattimes.com/api/feed/share-card?msid=<article-id>`
-   - Quickie URL: `https://quickie.navbharattimes.com/?itemId=<article-id>`
+   - Quickie URL (standalone column, tagged for Instagram):
+     `https://quickie.navbharattimes.com/?itemId=<article-id>&utm_source=insta_post&utm_medium=referral_quickie&utm_campaign=quickie`
+   - The link inside WP Channel Caption is tagged `utm_source=wp_post`, inside FB Post
+     Caption `utm_source=fb_post`, and inside X Post Caption `utm_source=twitter_post`
+     (all with `utm_medium=referral_quickie&utm_campaign=quickie`), so each channel's
+     Quickie traffic can be told apart in analytics.
 
 `SECTION_PRIORITY` in `quickie_daily_sheet.py` currently checks only the India News
 section (msid `1564454`) — add more `{"name", "msid"}` entries there for additional

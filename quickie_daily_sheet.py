@@ -51,13 +51,28 @@ SHEET_HEADER = [
     "Article Headline",
     "Instagram Caption",
     "WP Channel Caption",
-    "FB/X Post Caption",
+    "FB Post Caption",
+    "X Post Caption",
     "Hashtags",
 ]
 
 QUICKIE_IMAGE_URL_TEMPLATE = "https://quickie.navbharattimes.com/api/feed/share-card?msid={msid}"
 QUICKIE_URL_TEMPLATE = "https://quickie.navbharattimes.com/?itemId={msid}"
 MAX_HASHTAGS = 4
+
+# Per-surface UTM tags appended to every Quickie URL that goes out. "general"
+# is used for the standalone Quickie URL column (Instagram has no clickable
+# caption links, so that link gets used/shared separately).
+UTM_PARAMS = {
+    "general": "utm_source=insta_post&utm_medium=referral_quickie&utm_campaign=quickie",
+    "wp": "utm_source=wp_post&utm_medium=referral_quickie&utm_campaign=quickie",
+    "fb": "utm_source=fb_post&utm_medium=referral_quickie&utm_campaign=quickie",
+    "twitter": "utm_source=twitter_post&utm_medium=referral_quickie&utm_campaign=quickie",
+}
+
+
+def build_quickie_url(article_id, surface):
+    return f"{QUICKIE_URL_TEMPLATE.format(msid=article_id)}&{UTM_PARAMS[surface]}"
 
 # Appended in code (not by the model) to wp_caption/fb_x_caption so the URL is
 # always exactly right rather than something Groq might mistype.
@@ -89,11 +104,12 @@ Rules for "wp_caption" (for a WhatsApp Channel post):
   do NOT mention "Quickie" as a keyword to comment — WhatsApp Channels have no
   automated comment-to-DM feature. Just the hook line, nothing else.
 
-Rules for "fb_x_caption" (for a Facebook/X post):
+Rules for "fb_x_caption" (used as the hook for both a Facebook post and an X post):
 - Written in Hindi, one crisp hook-first line only, under 150 characters.
-- Same restriction as wp_caption: a closing line and the Quickie URL are appended
-  automatically afterward, so write only the hook line — no "comment Quickie"
-  instruction, no promise of a DM, no closing line of your own.
+- Same restriction as wp_caption: a closing line and the Quickie URL (a differently
+  tagged one for each platform) are appended automatically afterward, so write only
+  the hook line — no "comment Quickie" instruction, no promise of a DM, no closing
+  line of your own.
 
 Rules for "hashtags":
 - An array of AT MOST 4 hashtags — only the most important ones, prioritized in order:
@@ -330,7 +346,7 @@ def main():
     seolocation = get_field(item, ["seolocation", "seo_location"]) or ""
     article_url = build_article_url(seolocation, article_id)
     quickie_image_url = QUICKIE_IMAGE_URL_TEMPLATE.format(msid=article_id)
-    quickie_url = QUICKIE_URL_TEMPLATE.format(msid=article_id)
+    quickie_url = build_quickie_url(article_id, "general")
 
     log.info("Selected story %s from %s (%s): %s", article_id, section_name, source, headline)
 
@@ -341,9 +357,13 @@ def main():
     status = "Needs Review" if instagram_caption == "GENERATION_FAILED" else "Ready"
 
     if wp_caption != "GENERATION_FAILED":
-        wp_caption = f"{wp_caption}\n\n{QUICKIE_CTA_LINE}\n{quickie_url}"
+        wp_caption = f"{wp_caption}\n\n{QUICKIE_CTA_LINE}\n{build_quickie_url(article_id, 'wp')}"
+
     if fb_x_caption != "GENERATION_FAILED":
-        fb_x_caption = f"{fb_x_caption}\n\n{QUICKIE_CTA_LINE}\n{quickie_url}"
+        fb_caption = f"{fb_x_caption}\n\n{QUICKIE_CTA_LINE}\n{build_quickie_url(article_id, 'fb')}"
+        x_caption = f"{fb_x_caption}\n\n{QUICKIE_CTA_LINE}\n{build_quickie_url(article_id, 'twitter')}"
+    else:
+        fb_caption = x_caption = "GENERATION_FAILED"
 
     now = datetime.now(ZoneInfo("Asia/Kolkata"))
     row = [
@@ -356,7 +376,8 @@ def main():
         headline,
         instagram_caption,
         wp_caption,
-        fb_x_caption,
+        fb_caption,
+        x_caption,
         " ".join(hashtags),
     ]
 
