@@ -1,8 +1,8 @@
-// Turns today's 5 articles into 5 evergreen GK questions for the Quickie quiz.
-// Deliberately steers away from facts tied to the specific ongoing story
-// (scores, breaking developments, "as of today" figures) since those can
-// change or age out before the card ships on social; instead it asks about
-// the stable general-knowledge subject each article touches on.
+// Turns today's articles into one evergreen GK question per article for the
+// Quickie quiz. Deliberately steers away from facts tied to the specific
+// ongoing story (scores, breaking developments, "as of today" figures) since
+// those can change or age out before the card ships on social; instead it
+// asks about the stable general-knowledge subject each article touches on.
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = process.env.QUICKIE_MODEL || "openai/gpt-oss-120b";
@@ -15,6 +15,7 @@ function normalize(question) {
 }
 
 function buildPrompt(theme, articles, avoidQuestions) {
+  const count = articles.length;
   const articleList = articles
     .map((a, i) => `${i + 1}. ${a.title}${a.synopsis ? ` — ${a.synopsis}` : ""}`)
     .join("\n");
@@ -31,7 +32,7 @@ function buildPrompt(theme, articles, avoidQuestions) {
 
 Today's theme is: ${theme}
 
-Here are 5 articles from today's NBT feed for this theme (used only as topic inspiration):
+Here are ${count} articles from today's NBT feed for this theme (used only as topic inspiration):
 ${articleList}
 ${avoidBlock}
 For EACH article, write one general-knowledge quiz question inspired by its broad subject area — NOT about the specific ongoing news event, and NOT reliant on any fact that could change (scores, ongoing figures, "as of now" details, breaking developments). The question must be a stable, evergreen general-knowledge fact related to the article's subject (e.g. if the article is about a cricket match, ask a GK question about cricket history/rules, not about the match result).
@@ -40,12 +41,12 @@ For EACH question also write 3 wrong options (distractors) for a multiple-choice
 
 Rules:
 - Write the question, the correct answer, and all 3 wrong options in Hindi, using Devanagari script (NBT is a Hindi publication) — not English, not Hinglish transliteration.
-- Exactly 5 questions, one per article, in the same order as the articles.
+- Exactly ${count} questions, one per article, in the same order as the articles.
 - Each question should be short, punchy, and quiz-card friendly.
 - The correct answer and each wrong option should be short (a word or short phrase).
 - Do not reference "the article" or "today's news" in the question.
-- All 5 questions must be about different facts from each other, and none may match or closely paraphrase any question in the "already used" list above.
-- Respond with ONLY a JSON object of the form {"questions": [{"question": "...", "answer": "...", "wrongOptions": ["...", "...", "..."]}, ...]} containing exactly 5 entries, each with exactly 3 wrongOptions, all text in Hindi (Devanagari). No markdown, no commentary, no extra keys.`;
+- All ${count} questions must be about different facts from each other, and none may match or closely paraphrase any question in the "already used" list above.
+- Respond with ONLY a JSON object of the form {"questions": [{"question": "...", "answer": "...", "wrongOptions": ["...", "...", "..."]}, ...]} containing exactly ${count} entries, each with exactly 3 wrongOptions, all text in Hindi (Devanagari). No markdown, no commentary, no extra keys.`;
 }
 
 function extractQuestions(text) {
@@ -89,9 +90,10 @@ async function callGroq(theme, articles, avoidQuestions) {
     throw new Error(`Groq returned an empty response. Full payload: ${JSON.stringify(data)}`);
   }
   const questions = extractQuestions(text);
+  const expectedCount = articles.length;
 
-  if (!Array.isArray(questions) || questions.length !== 5) {
-    throw new Error(`Expected exactly 5 questions, got: ${JSON.stringify(questions)}`);
+  if (!Array.isArray(questions) || questions.length !== expectedCount) {
+    throw new Error(`Expected exactly ${expectedCount} questions, got: ${JSON.stringify(questions)}`);
   }
 
   const normalized = questions.map((q) => ({
@@ -143,7 +145,7 @@ async function generateQuestions(theme, articles, usedQuestions = []) {
     avoidQuestions.push(...duplicates);
   }
 
-  throw new Error("Could not generate 5 non-duplicate questions after multiple attempts");
+  throw new Error(`Could not generate ${articles.length} non-duplicate questions after multiple attempts`);
 }
 
 module.exports = { generateQuestions };

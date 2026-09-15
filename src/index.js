@@ -3,7 +3,7 @@ const { fetchArticles } = require("./feed");
 const { generateQuestions } = require("./questionGenerator");
 const { prependRows, getExistingQuestions } = require("./sheets");
 
-const ARTICLES_NEEDED = 5;
+const ARTICLES_NEEDED = 3;
 
 function formatDate(date) {
   const day = date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric" });

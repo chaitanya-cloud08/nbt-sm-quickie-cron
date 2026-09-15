@@ -3,7 +3,7 @@
 This repo holds two independent daily automations:
 
 1. [**"Sabse Tez, Quickie Se" quiz cron**](#1-sabse-tez-quickie-se-quiz-cron) (`src/`) — a
-   5-question GK quiz card, 9:00 AM IST.
+   3-question GK quiz card, 9:00 AM IST.
 2. [**Quickie of the Day**](#2-quickie-of-the-day-instagram-caption-generator)
    (`quickie_daily_sheet.py`) — one story a day with an Instagram caption + hashtags,
    8:00 AM IST.
@@ -25,7 +25,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
    | Saturday  | Sports         |
    | Sunday    | World News     |
 
-2. Pulls 5 articles for that theme from the NBT global feed
+2. Pulls 3 articles for that theme from the NBT global feed
    (`https://global-feed.indiatimes.com/wufs/feed/list/article?client=nbt&pc=nbt&dm=t&msid=<theme-id>`).
 3. Reads every question already written to the sheet, and asks Groq to turn each
    article into one **evergreen general-knowledge question** in Hindi (Devanagari)
@@ -35,7 +35,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
    a multiple-choice card. If the model still returns a duplicate question, or is
    missing an option, the script retries automatically (up to 4 attempts) before
    failing loudly rather than posting bad data.
-4. Inserts 5 rows (`Day, Date, Theme, Question, Correct Answer, Option 2, Option 3,
+4. Inserts 3 rows (`Day, Date, Theme, Question, Correct Answer, Option 2, Option 3,
    Option 4`) at the top of a Google Sheet, right under the header, so the most
    recent day's quiz is always the first thing the social media SPOC sees, and
    drops them into the quiz template (slide 5 always links back to Quickie).
