@@ -3,7 +3,7 @@
 This repo holds two independent daily automations:
 
 1. [**"Sabse Tez, Quickie Se" quiz cron**](#1-sabse-tez-quickie-se-quiz-cron) (`src/`) — a
-   3-question GK quiz card, 11:00 AM IST.
+   3-question GK quiz card, 10:30 AM IST.
 2. [**Quickie of the Day**](#2-quickie-of-the-day-instagram-caption-generator)
    (`quickie_daily_sheet.py`) — one story a day with an Instagram caption + hashtags,
    3:00 PM IST.
@@ -11,7 +11,7 @@ This repo holds two independent daily automations:
 ## 1. "Sabse Tez, Quickie Se" quiz cron
 
 Automated daily script for the Instagram/Facebook Story quiz card series. Every day at
-**11:00 AM IST** it:
+**10:30 AM IST** it:
 
 1. Picks today's theme from the editorial calendar:
 
@@ -62,7 +62,7 @@ Automated daily script for the Instagram/Facebook Story quiz card series. Every 
 ### 3. Schedule
 
 The workflow at [`.github/workflows/quickie-cron.yml`](.github/workflows/quickie-cron.yml)
-runs on a `30 5 * * *` UTC cron (= 11:00 IST daily) and can also be triggered manually
+runs on a `0 5 * * *` UTC cron (= 10:30 IST daily) and can also be triggered manually
 from the Actions tab (`workflow_dispatch`).
 
 ## Running locally
