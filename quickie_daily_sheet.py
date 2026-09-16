@@ -50,6 +50,7 @@ SHEET_HEADER = [
     "Quickie URL",
     "Article Headline",
     "Instagram Caption",
+    "Instagram DM Reply",
     "WP Channel Caption",
     "FB Post Caption",
     "X Post Caption",
@@ -82,7 +83,7 @@ GROQ_SYSTEM_PROMPT = """You write social captions for NBT's "Quickie" news brief
 
 Given a news headline and synopsis, return STRICT JSON only, no markdown, no commentary,
 in this exact shape:
-{"instagram_caption": "...", "wp_caption": "...", "fb_x_caption": "...", "hashtags": ["...", ...]}
+{"instagram_caption": "...", "ig_dm_reply": "...", "wp_caption": "...", "fb_x_caption": "...", "hashtags": ["...", ...]}
 
 Rules for "instagram_caption":
 - Written in Hindi.
@@ -96,6 +97,15 @@ Rules for "instagram_caption":
      inside quotes exactly like that, and phrase the rest of that line to fit today's
      topic. This line must always be on its own line, never merged into line 1.
 - The two lines combined must stay under 200 characters.
+
+Rules for "ig_dm_reply" (the automated DM someone gets after commenting "Quickie" on the
+Instagram post):
+- Written in Hindi, one short, warm, thank-you-style line only, under 100 characters —
+  e.g. thanking them for their interest and teasing that their story is ready.
+- Do NOT include a link or URL yourself — the Quickie URL is appended automatically
+  after this line in code.
+- Do NOT repeat the instagram_caption's hook verbatim; this is a reply message, not
+  another hook.
 
 Rules for "wp_caption" (for a WhatsApp Channel post):
 - Written in Hindi, one crisp hook-first line only, under 120 characters.
@@ -265,6 +275,7 @@ def call_groq(headline, synopsis):
 def parse_groq_response(content):
     parsed = json.loads(strip_code_fences(content))
     instagram_caption = parsed["instagram_caption"]
+    ig_dm_reply = parsed["ig_dm_reply"]
     wp_caption = parsed["wp_caption"]
     fb_x_caption = parsed["fb_x_caption"]
     hashtags = parsed["hashtags"]
@@ -273,6 +284,8 @@ def parse_groq_response(content):
         raise ValueError("Missing or empty 'instagram_caption' in Groq response")
     if "\n" not in instagram_caption.strip():
         raise ValueError("'instagram_caption' is missing the required line break before the CTA line")
+    if not isinstance(ig_dm_reply, str) or not ig_dm_reply.strip():
+        raise ValueError("Missing or empty 'ig_dm_reply' in Groq response")
     if not isinstance(wp_caption, str) or not wp_caption.strip():
         raise ValueError("Missing or empty 'wp_caption' in Groq response")
     if not isinstance(fb_x_caption, str) or not fb_x_caption.strip():
@@ -281,7 +294,7 @@ def parse_groq_response(content):
         raise ValueError("Missing or empty 'hashtags' in Groq response")
 
     hashtags = [str(h).strip() for h in hashtags if str(h).strip()][:MAX_HASHTAGS]
-    return instagram_caption.strip(), wp_caption.strip(), fb_x_caption.strip(), hashtags
+    return instagram_caption.strip(), ig_dm_reply.strip(), wp_caption.strip(), fb_x_caption.strip(), hashtags
 
 
 def generate_captions_and_hashtags(headline, synopsis):
@@ -294,7 +307,7 @@ def generate_captions_and_hashtags(headline, synopsis):
             last_error = e
             log.warning("Groq caption generation attempt %d/2 failed: %s", attempt, e)
     log.error("Groq caption generation failed twice, giving up: %s", last_error)
-    return "GENERATION_FAILED", "GENERATION_FAILED", "GENERATION_FAILED", ["GENERATION_FAILED"]
+    return "GENERATION_FAILED", "GENERATION_FAILED", "GENERATION_FAILED", "GENERATION_FAILED", ["GENERATION_FAILED"]
 
 
 def get_worksheet():
@@ -353,8 +366,13 @@ def main():
     used_ids.append(article_id)
     save_used_stories(used_ids)
 
-    instagram_caption, wp_caption, fb_x_caption, hashtags = generate_captions_and_hashtags(headline, synopsis)
+    instagram_caption, ig_dm_reply, wp_caption, fb_x_caption, hashtags = generate_captions_and_hashtags(
+        headline, synopsis
+    )
     status = "Needs Review" if instagram_caption == "GENERATION_FAILED" else "Ready"
+
+    if ig_dm_reply != "GENERATION_FAILED":
+        ig_dm_reply = f"{ig_dm_reply}\n{quickie_url}"
 
     if wp_caption != "GENERATION_FAILED":
         wp_caption = f"{wp_caption}\n\n{QUICKIE_CTA_LINE}\n{build_quickie_url(article_id, 'wp')}"
@@ -375,6 +393,7 @@ def main():
         quickie_url,
         headline,
         instagram_caption,
+        ig_dm_reply,
         wp_caption,
         fb_caption,
         x_caption,

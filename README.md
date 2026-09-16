@@ -98,6 +98,9 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    three separate captions plus hashtags as strict JSON:
    - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the
      "comment 'Quickie' for the link in DM" CTA always on its own line).
+   - **Instagram DM Reply** — the short, warm one-liner someone gets in their DM after
+     commenting "Quickie" on the post, with the same Instagram-tagged Quickie URL from
+     the Quickie URL column appended after it in code.
    - **WP Channel Caption** — one crisp Hindi hook line for a WhatsApp Channel post,
      with no "comment Quickie" instruction (WhatsApp Channels have no comment-to-DM
      automation). The script then appends a closing line — "जानें सभी बड़ी खबरें बस 30
@@ -113,8 +116,9 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    caption; after two failures it logs the error and still writes the row with
    `"GENERATION_FAILED"` in place of the captions/hashtags rather than crashing.
 3. Inserts one row (`Day, Date, Article MSID, Article URL, Quickie Image URL, Quickie
-   URL, Article Headline, Instagram Caption, WP Channel Caption, FB Post Caption, X
-   Post Caption, Hashtags`) at the top of a Google Sheet tab, right under the header
+   URL, Article Headline, Instagram Caption, Instagram DM Reply, WP Channel Caption,
+   FB Post Caption, X Post Caption, Hashtags`) at the top of a Google Sheet tab, right
+   under the header
    (created automatically on first run if it doesn't exist), so the most recent day's
    story is always the first thing visible.
    - Quickie Image URL: `https://quickie.navbharattimes.com/api/feed/share-card?msid=<article-id>`
