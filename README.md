@@ -92,15 +92,20 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
    prefers `rlData.edittrendingItems` entries — matched by headline/URL to their full
    record in `items` — falling back to walking through `items` itself (most recent
    first) once the trending entries run out or don't match. Anything already in
-   `used_stories.json` is skipped, walking further down the list rather than giving up,
-   so no story repeats and a section doesn't dead-end after its top story is used once.
+   `used_stories.json`, or whose headline/synopsis matches a weather keyword
+   (`WEATHER_KEYWORDS` in `quickie_daily_sheet.py` — forecasts, IMD alerts, rain/heat/
+   cold advisories), is skipped, walking further down the list rather than giving up,
+   so no story repeats, weather stories never get picked, and a section doesn't
+   dead-end after its top story is used once.
 2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
    three separate captions plus hashtags as strict JSON:
    - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the
      "comment 'Quickie' for the link in DM" CTA always on its own line).
-   - **Instagram DM Reply** — the short, warm one-liner someone gets in their DM after
-     commenting "Quickie" on the post, with the same Instagram-tagged Quickie URL from
-     the Quickie URL column appended after it in code.
+   - **Instagram DM Reply** — this text IS the automated DM someone gets after
+     commenting "Quickie" on the post, so it ends with a direct call-to-action to tap
+     the link and read the story on Quickie now (not a vague "your link is ready").
+     The same Instagram-tagged Quickie URL from the Quickie URL column is appended
+     after it, on its own line, in code.
    - **WP Channel Caption** — one crisp Hindi hook line for a WhatsApp Channel post,
      with no "comment Quickie" instruction (WhatsApp Channels have no comment-to-DM
      automation). The script then appends a closing line — "जानें सभी बड़ी खबरें बस 30

@@ -98,12 +98,15 @@ Rules for "instagram_caption":
      topic. This line must always be on its own line, never merged into line 1.
 - The two lines combined must stay under 200 characters.
 
-Rules for "ig_dm_reply" (the automated DM someone gets after commenting "Quickie" on the
-Instagram post):
-- Written in Hindi, one short, warm, thank-you-style line only, under 100 characters —
-  e.g. thanking them for their interest and teasing that their story is ready.
-- Do NOT include a link or URL yourself — the Quickie URL is appended automatically
-  after this line in code.
+Rules for "ig_dm_reply" (this text IS the automated DM someone gets after commenting
+"Quickie" — the Quickie URL is appended right after it, on its own line, in code — so
+this message must actively push them to open that link, not just announce that a link
+is coming):
+- Written in Hindi, one short line only, under 100 characters.
+- Must end with a direct call-to-action to tap/open the link below to read the full
+  story on Quickie right now — e.g. "पूरी खबर जानने के लिए नीचे दिए लिंक पर टैप करें"
+  or "अभी Quickie पर पढ़ें पूरी खबर" — phrased naturally for today's topic.
+- Do NOT include a link or URL yourself — it is appended automatically after this line.
 - Do NOT repeat the instagram_caption's hook verbatim; this is a reply message, not
   another hook.
 
@@ -156,6 +159,22 @@ def fetch_feed(msid):
     resp = requests.get(FEED_URL_TEMPLATE.format(msid=msid), timeout=15)
     resp.raise_for_status()
     return resp.json()
+
+
+# Weather stories (forecasts, IMD alerts, rain/heat/cold advisories) are
+# routine and don't make an interesting "story of the day" — skip them in
+# story selection.
+WEATHER_KEYWORDS = [
+    "मौसम", "बारिश", "बरसात", "वर्षा", "तापमान", "आंधी", "तूफान", "ओलावृष्टि",
+    "हीटवेव", "लू ", "शीतलहर", "कोहरा", "बर्फबारी", "चक्रवात", "गर्मी का",
+    "सर्दी का", "मानसून", "weather", "rainfall", "temperature", "heatwave",
+    "heat wave", "cold wave", "cyclone", "monsoon", "fog alert", "imd ",
+]
+
+
+def is_weather_story(headline, synopsis=""):
+    text = f"{headline} {synopsis}".lower()
+    return any(keyword.lower() in text for keyword in WEATHER_KEYWORDS)
 
 
 def match_trending_item(trending_entry, items):
@@ -228,6 +247,11 @@ def select_story(used_ids):
         if not article_id:
             continue
         article_id = str(article_id)
+        headline = get_field(item, ["hl", "headline", "title"]) or ""
+        synopsis = get_field(item, ["syn", "synopsis", "summary"]) or ""
+        if is_weather_story(headline, synopsis):
+            log.info("Candidate %s from %s (%s) is a weather story, skipping: %s", article_id, section_name, source, headline)
+            continue
         if article_id in used_ids:
             log.info("Candidate %s from %s (%s) already used, skipping", article_id, section_name, source)
             continue
