@@ -91,12 +91,16 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 1. Checks the sections in `SECTION_PRIORITY` (top of the file) in order. For each one it
    prefers `rlData.edittrendingItems` entries — matched by headline/URL to their full
    record in `items` — falling back to walking through `items` itself (most recent
-   first) once the trending entries run out or don't match. Anything already in
-   `used_stories.json`, or whose headline/synopsis matches a weather keyword
-   (`WEATHER_KEYWORDS` in `quickie_daily_sheet.py` — forecasts, IMD alerts, rain/heat/
-   cold advisories), is skipped, walking further down the list rather than giving up,
-   so no story repeats, weather stories never get picked, and a section doesn't
-   dead-end after its top story is used once.
+   first) once the trending entries run out or don't match. A candidate is skipped
+   (walking further down the list rather than giving up) if it's already in
+   `used_stories.json`; if its headline/synopsis matches a weather keyword
+   (`WEATHER_KEYWORDS` — forecasts, IMD alerts, rain/heat/cold advisories); if its
+   publish date is recognized (`DATE_KEYS`) and isn't today (in IST) — so a story
+   logged at 3pm is always from today, not something from yesterday still sitting in
+   the feed; or if `quickie_card_exists()` finds no Quickie share-card for it yet (a
+   live check against the share-card API, so the Quickie URL handed out never 404s
+   or shows "not found"). So no story repeats, weather/stale/card-less stories never
+   get picked, and a section doesn't dead-end after its top story is used once.
 2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
    three separate captions plus hashtags as strict JSON:
    - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the

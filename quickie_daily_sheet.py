@@ -177,6 +177,120 @@ def is_weather_story(headline, synopsis=""):
     return any(keyword.lower() in text for keyword in WEATHER_KEYWORDS)
 
 
+# Possible publish-date field names across feed variants seen so far.
+DATE_KEYS = [
+    "dl", "publishedon", "publishdate", "createdon", "pubdate", "pdate",
+    "date", "publish_date", "updated_dt", "etv", "epochtime",
+]
+
+_DATE_FORMATS = (
+    "%Y-%m-%dT%H:%M:%S%z",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+    "%d %b %Y, %I:%M %p",
+    "%d %b, %Y, %I:%M %p",
+    "%b %d, %Y, %I:%M %p",
+    "%d-%m-%Y %H:%M:%S",
+    "%d-%m-%Y",
+    "%Y-%m-%d",
+)
+
+
+def parse_item_datetime(raw):
+    """Best-effort parse of a feed item's publish-date field into an
+    Asia/Kolkata-aware datetime. Returns None if the value can't be
+    recognized (unknown format), so callers can tell "confirmed not today"
+    apart from "couldn't tell"."""
+    if raw is None:
+        return None
+
+    if isinstance(raw, (int, float)):
+        try:
+            ts = float(raw)
+            if ts > 1e12:  # milliseconds since epoch
+                ts /= 1000
+            return datetime.fromtimestamp(ts, tz=ZoneInfo("Asia/Kolkata"))
+        except (ValueError, OverflowError, OSError):
+            return None
+
+    if isinstance(raw, str):
+        raw = raw.strip()
+        if not raw:
+            return None
+        if raw.isdigit():
+            return parse_item_datetime(int(raw))
+        for fmt in _DATE_FORMATS:
+            try:
+                dt = datetime.strptime(raw, fmt)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+                return dt.astimezone(ZoneInfo("Asia/Kolkata"))
+            except ValueError:
+                continue
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=ZoneInfo("Asia/Kolkata"))
+            return dt.astimezone(ZoneInfo("Asia/Kolkata"))
+        except ValueError:
+            return None
+
+    return None
+
+
+def is_published_today(item):
+    """True/False when a publish date was found and parsed; None when no
+    recognizable date field was present (caller decides how to treat that)."""
+    raw = None
+    for key in DATE_KEYS:
+        val = item.get(key)
+        if val not in (None, ""):
+            raw = val
+            break
+    if raw is None:
+        return None
+
+    dt = parse_item_datetime(raw)
+    if dt is None:
+        log.warning("Could not parse publish date %r for an item; treating date as unknown", raw)
+        return None
+
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    return dt.date() == today
+
+
+def quickie_card_exists(article_id):
+    """Confirms a Quickie share-card actually exists for this article before
+    we pick it, so the Quickie URL we hand out never 404s / shows "not
+    found"."""
+    url = QUICKIE_IMAGE_URL_TEMPLATE.format(msid=article_id)
+    try:
+        resp = requests.get(url, timeout=10)
+    except requests.RequestException as e:
+        log.warning("Could not verify Quickie card for %s: %s", article_id, e)
+        return False
+
+    if resp.status_code == 404:
+        return False
+    if resp.status_code != 200:
+        log.warning("Unexpected status %s checking Quickie card for %s", resp.status_code, article_id)
+        return False
+
+    content_type = resp.headers.get("content-type", "")
+    if "image" in content_type:
+        return True
+
+    # Some APIs return 200 with a JSON error body instead of 404.
+    try:
+        data = resp.json()
+    except ValueError:
+        return True
+    text = json.dumps(data).lower()
+    if "not found" in text or "error" in text:
+        return False
+    return True
+
+
 def match_trending_item(trending_entry, items):
     trend_headline = get_field(trending_entry, ["hl", "headline", "title"])
     trend_url = get_field(trending_entry, ["wu", "weburl", "url"])
@@ -214,9 +328,12 @@ def select_story(used_ids):
     """Prefer trending items per section (in priority order, top trending entry
     first), matched to their full record in `items`; fall back to walking
     through `items` itself (most recent first) if there's no trending match,
-    or once every trending candidate has already been used. Skips anything
-    already in used_ids so a section doesn't dead-end after its top story is
-    used once."""
+    or once every trending candidate has already been used. A candidate is
+    skipped (walking to the next one, rather than giving up) if: it's already
+    in used_ids; it's a weather story; its publish date is known and isn't
+    today; or no Quickie share-card exists for it yet. So a section doesn't
+    dead-end after its top story is used once, and the picked story is always
+    fresh and has a working Quickie link."""
     trending_candidates = []
     fallback_candidates = []
 
@@ -254,6 +371,13 @@ def select_story(used_ids):
             continue
         if article_id in used_ids:
             log.info("Candidate %s from %s (%s) already used, skipping", article_id, section_name, source)
+            continue
+        today_check = is_published_today(item)
+        if today_check is False:
+            log.info("Candidate %s from %s (%s) is not from today, skipping: %s", article_id, section_name, source, headline)
+            continue
+        if not quickie_card_exists(article_id):
+            log.info("Candidate %s from %s (%s) has no Quickie card yet, skipping: %s", article_id, section_name, source, headline)
             continue
         return item, source, section_name, article_id
 
