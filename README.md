@@ -88,19 +88,24 @@ node -r dotenv/config src/index.js   # or export the vars yourself and `npm star
 
 `quickie_daily_sheet.py` runs once a day (3:00 PM IST) and:
 
-1. Checks the sections in `SECTION_PRIORITY` (top of the file) in order. For each one it
-   prefers `rlData.edittrendingItems` entries — matched by headline/URL to their full
-   record in `items` — falling back to walking through `items` itself (most recent
-   first) once the trending entries run out or don't match. A candidate is skipped
-   (walking further down the list rather than giving up) if it's already in
+1. Checks the sections in `SECTION_PRIORITY` (top of the file) in order (cache-busted —
+   a timestamp query param and no-cache headers — since this feed was observed
+   returning an identical stale item list across different days). It prefers
+   `rlData.edittrendingItems` entries — matched by headline/URL to their full record
+   in `items` — falling back to walking through `items` itself (most recent first)
+   once the trending entries run out or don't match. A candidate is skipped (walking
+   further down the list rather than giving up) if it's already in
    `used_stories.json`; if its headline/synopsis matches a weather keyword
-   (`WEATHER_KEYWORDS` — forecasts, IMD alerts, rain/heat/cold advisories); if its
-   publish date is recognized (`DATE_KEYS`) and isn't today (in IST) — so a story
-   logged at 3pm is always from today, not something from yesterday still sitting in
-   the feed; or if `quickie_card_exists()` finds no Quickie share-card for it yet (a
-   live check against the share-card API, so the Quickie URL handed out never 404s
-   or shows "not found"). So no story repeats, weather/stale/card-less stories never
-   get picked, and a section doesn't dead-end after its top story is used once.
+   (`WEATHER_KEYWORDS` — forecasts, IMD alerts, rain/heat/cold advisories); or if
+   `quickie_card_exists()` finds no Quickie share-card for it yet (a live check
+   against the share-card API, so the Quickie URL handed out never 404s or shows
+   "not found"). On top of that, selection runs in two passes: pass 1 additionally
+   requires a publish date (`DATE_KEYS`) recognized as today (IST), so a story
+   logged at 3pm is today's news, not something stale still sitting in the feed;
+   only if pass 1 finds nothing at all does pass 2 drop that date requirement and
+   take the most recent otherwise-valid candidate instead (logged as a warning),
+   so the run still produces something rather than failing outright on a day the
+   feed hasn't surfaced anything fresh.
 2. Sends the headline and a cleaned synopsis to Groq (`openai/gpt-oss-120b`), asking for
    three separate captions plus hashtags as strict JSON:
    - **Instagram Caption** — crisp, two-line Hindi caption (a short hook line, then the

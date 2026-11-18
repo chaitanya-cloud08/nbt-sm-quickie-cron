@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import sys
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -156,7 +157,11 @@ def build_article_url(seolocation, article_id):
 
 
 def fetch_feed(msid):
-    resp = requests.get(FEED_URL_TEMPLATE.format(msid=msid), timeout=15)
+    # Cache-bust: the same handful of stale items were observed showing up
+    # identically across multiple different days, suggesting an intermediate
+    # cache was serving an old snapshot of this feed.
+    url = f"{FEED_URL_TEMPLATE.format(msid=msid)}&_ts={int(time.time())}"
+    resp = requests.get(url, headers={"Cache-Control": "no-cache", "Pragma": "no-cache"}, timeout=15)
     resp.raise_for_status()
     return resp.json()
 
@@ -330,10 +335,15 @@ def select_story(used_ids):
     through `items` itself (most recent first) if there's no trending match,
     or once every trending candidate has already been used. A candidate is
     skipped (walking to the next one, rather than giving up) if: it's already
-    in used_ids; it's a weather story; its publish date is known and isn't
-    today; or no Quickie share-card exists for it yet. So a section doesn't
-    dead-end after its top story is used once, and the picked story is always
-    fresh and has a working Quickie link."""
+    in used_ids; it's a weather story; or no Quickie share-card exists for it
+    yet. So a section doesn't dead-end after its top story is used once, and
+    the picked story always has a working Quickie link.
+
+    Publish date is handled as two passes rather than a hard filter: pass 1
+    requires a candidate confirmed to be from today (IST); only if that finds
+    nothing at all does pass 2 fall back to the most recent otherwise-valid
+    candidate regardless of date, with a loud warning, rather than the whole
+    run failing outright."""
     trending_candidates = []
     fallback_candidates = []
 
@@ -359,27 +369,34 @@ def select_story(used_ids):
         for item in items:
             fallback_candidates.append((item, "recency_fallback", section["name"]))
 
-    for item, source, section_name in trending_candidates + fallback_candidates:
-        article_id = get_field(item, ["id", "msid"]) or str(item.get("id") or item.get("msid") or "")
-        if not article_id:
-            continue
-        article_id = str(article_id)
-        headline = get_field(item, ["hl", "headline", "title"]) or ""
-        synopsis = get_field(item, ["syn", "synopsis", "summary"]) or ""
-        if is_weather_story(headline, synopsis):
-            log.info("Candidate %s from %s (%s) is a weather story, skipping: %s", article_id, section_name, source, headline)
-            continue
-        if article_id in used_ids:
-            log.info("Candidate %s from %s (%s) already used, skipping", article_id, section_name, source)
-            continue
-        today_check = is_published_today(item)
-        if today_check is False:
-            log.info("Candidate %s from %s (%s) is not from today, skipping: %s", article_id, section_name, source, headline)
-            continue
-        if not quickie_card_exists(article_id):
-            log.info("Candidate %s from %s (%s) has no Quickie card yet, skipping: %s", article_id, section_name, source, headline)
-            continue
-        return item, source, section_name, article_id
+    all_candidates = trending_candidates + fallback_candidates
+
+    for require_today in (True, False):
+        if not require_today:
+            log.warning("No candidate from today was found; falling back to the most recent otherwise-valid story")
+
+        for item, source, section_name in all_candidates:
+            article_id = get_field(item, ["id", "msid"]) or str(item.get("id") or item.get("msid") or "")
+            if not article_id:
+                continue
+            article_id = str(article_id)
+            headline = get_field(item, ["hl", "headline", "title"]) or ""
+            synopsis = get_field(item, ["syn", "synopsis", "summary"]) or ""
+            if is_weather_story(headline, synopsis):
+                if require_today:
+                    log.info("Candidate %s from %s (%s) is a weather story, skipping: %s", article_id, section_name, source, headline)
+                continue
+            if article_id in used_ids:
+                if require_today:
+                    log.info("Candidate %s from %s (%s) already used, skipping", article_id, section_name, source)
+                continue
+            if require_today and is_published_today(item) is False:
+                log.info("Candidate %s from %s (%s) is not from today, skipping: %s", article_id, section_name, source, headline)
+                continue
+            if not quickie_card_exists(article_id):
+                log.info("Candidate %s from %s (%s) has no Quickie card yet, skipping: %s", article_id, section_name, source, headline)
+                continue
+            return item, source, section_name, article_id
 
     return None
 
